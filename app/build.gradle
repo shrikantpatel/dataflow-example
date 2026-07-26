@@ -1,0 +1,51 @@
+plugins {
+    id 'application'
+}
+
+group = 'com.example'
+version = '1.0.0'
+
+// Apache Beam does not yet officially support the very latest Java releases,
+// so we pin compilation/execution to Java 17 (an LTS release Beam fully supports)
+// via a Gradle toolchain. Gradle itself can still run on your installed JDK (25).
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    beamVersion = '2.75.0'
+    slf4jVersion = '2.0.16'
+}
+
+dependencies {
+    implementation "org.apache.beam:beam-sdks-java-core:${beamVersion}"
+    runtimeOnly "org.apache.beam:beam-runners-direct-java:${beamVersion}"
+
+    // Beam logs via SLF4J; provide a simple console binding so log output is visible.
+    runtimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    testImplementation "org.apache.beam:beam-sdks-java-core:${beamVersion}:tests"
+    testImplementation "org.apache.beam:beam-runners-direct-java:${beamVersion}"
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+}
+
+application {
+    mainClass = 'com.example.dataflow.WordCount'
+}
+
+// Allows passing pipeline options, e.g.:
+//   ./gradlew run --args="--inputFile=src/main/resources/input.txt --output=build/output/counts"
+tasks.named('run') {
+    standardInput = System.in
+}
+
+test {
+    useJUnit()
+}

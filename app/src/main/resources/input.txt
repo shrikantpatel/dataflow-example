@@ -1,0 +1,5 @@
+Apache Beam is a unified programming model for defining both batch and streaming data-parallel processing pipelines.
+Beam pipelines are portable across multiple execution engines, called runners.
+This is a simple word count example to learn the core concepts of Apache Beam.
+The pipeline reads a text file, splits it into words, counts each unique word, and writes the results to an output file.
+Learning Beam starts with understanding the Pipeline, PCollection, and PTransform concepts.
