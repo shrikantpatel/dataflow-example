@@ -29,9 +29,12 @@ dataflow-example/
     └── src/
         ├── main/java/com/example/dataflow/WordCount.java
         ├── main/java/com/example/dataflow/WordLengthStats.java
+        ├── main/java/com/example/dataflow/WordEnrichment.java
         ├── main/resources/input.txt        # sample input text
+        ├── main/resources/stopwords.txt     # stopwords used by WordEnrichment
         ├── test/java/com/example/dataflow/WordCountTest.java
-        └── test/java/com/example/dataflow/WordLengthStatsTest.java
+        ├── test/java/com/example/dataflow/WordLengthStatsTest.java
+        └── test/java/com/example/dataflow/WordEnrichmentTest.java
 ```
 
 ## Examples
@@ -67,6 +70,20 @@ gradle :app:run -PmainClass=com.example.dataflow.WordLengthStats --args="--outpu
 
 Output lines look like `p: 9.20` (average length of words starting with "p").
 
+### 3. WordEnrichment (side inputs & side outputs)
+
+Demonstrates two more core concepts together:
+- **Side input**: a small stopwords file is loaded into a `PCollectionView<List<String>>` via
+  `View.asList()` and broadcast to every worker, used to filter the main PCollection.
+- **Side outputs**: a single `ParDo` with `withOutputTags(...)` routes each surviving word to a
+  main output plus two additional outputs ("short" words and "long" words) via `TupleTag`s.
+
+```bash
+gradle :app:run -PmainClass=com.example.dataflow.WordEnrichment --args="--output=build/output/enrichment"
+```
+
+Produces three sets of sharded files: `enrichment-filtered-*`, `enrichment-short-*`, `enrichment-long-*`.
+
 ## Key Beam concepts introduced
 
 | Concept | What it is |
@@ -78,11 +95,12 @@ Output lines look like `p: 9.20` (average length of words starting with "p").
 | `PipelineOptions` | Command-line configurable settings (runner, input/output paths, etc.) |
 | `Runner` | The engine executing the pipeline — here, `DirectRunner` (local) |
 | `Combine.perKey` / `CombineFn` | A distributed reduction: partial aggregation on each worker, then merged — the basis for custom aggregations like averages |
+| Side input (`View.asList/asMap`) | A small, auxiliary PCollection made available to every worker processing a main PCollection — e.g. for filtering/enrichment without a join |
+| Side outputs (`TupleTag`, `withOutputTags`) | Routing a single `ParDo`'s results into multiple independent output PCollections in one pass |
 
 ## Ideas for future iterations
 
 - Windowing & triggers with an unbounded/streaming source
-- Side inputs and side outputs
 - Reading/writing structured data (Avro, JSON, BigQuery-style schemas)
 - Running the same pipeline on other runners (e.g. Flink) or actual Google Cloud Dataflow
 - Beam SQL / Schema-aware PCollections
