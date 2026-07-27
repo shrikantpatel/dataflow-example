@@ -28,11 +28,15 @@ dataflow-example/
     ├── build.gradle
     └── src/
         ├── main/java/com/example/dataflow/WordCount.java
+        ├── main/java/com/example/dataflow/WordLengthStats.java
         ├── main/resources/input.txt        # sample input text
-        └── test/java/com/example/dataflow/WordCountTest.java
+        ├── test/java/com/example/dataflow/WordCountTest.java
+        └── test/java/com/example/dataflow/WordLengthStatsTest.java
 ```
 
-## Running it
+## Examples
+
+### 1. WordCount
 
 Build and run tests:
 ```bash
@@ -51,6 +55,18 @@ gradle :app:run --args="--inputFile=src/main/resources/input.txt --output=build/
 
 Output is written as sharded text files, e.g. `app/build/output/counts-00000-of-00004.txt`, each line like `beam: 4`.
 
+### 2. WordLengthStats (Combine transforms)
+
+Demonstrates writing a **custom `CombineFn`** to compute the average word length per starting
+letter — the pattern behind Beam's built-in `Sum`, `Mean`, `Top`, etc. Run it via the `mainClass`
+project property:
+
+```bash
+gradle :app:run -PmainClass=com.example.dataflow.WordLengthStats --args="--output=build/output/word-length-stats"
+```
+
+Output lines look like `p: 9.20` (average length of words starting with "p").
+
 ## Key Beam concepts introduced
 
 | Concept | What it is |
@@ -61,12 +77,12 @@ Output is written as sharded text files, e.g. `app/build/output/counts-00000-of-
 | `DoFn` | User code applied per-element inside a `ParDo` |
 | `PipelineOptions` | Command-line configurable settings (runner, input/output paths, etc.) |
 | `Runner` | The engine executing the pipeline — here, `DirectRunner` (local) |
+| `Combine.perKey` / `CombineFn` | A distributed reduction: partial aggregation on each worker, then merged — the basis for custom aggregations like averages |
 
 ## Ideas for future iterations
 
 - Windowing & triggers with an unbounded/streaming source
 - Side inputs and side outputs
-- Combine transforms (`Combine.perKey`, custom `CombineFn`)
 - Reading/writing structured data (Avro, JSON, BigQuery-style schemas)
 - Running the same pipeline on other runners (e.g. Flink) or actual Google Cloud Dataflow
 - Beam SQL / Schema-aware PCollections

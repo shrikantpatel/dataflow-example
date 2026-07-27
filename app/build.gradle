@@ -37,11 +37,13 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.example.dataflow.WordCount'
+    // Defaults to WordCount; override with -PmainClass=com.example.dataflow.WordLengthStats
+    mainClass = project.findProperty('mainClass') ?: 'com.example.dataflow.WordCount'
 }
 
 // Allows passing pipeline options, e.g.:
 //   ./gradlew run --args="--inputFile=src/main/resources/input.txt --output=build/output/counts"
+//   ./gradlew run -PmainClass=com.example.dataflow.WordLengthStats --args="--output=build/output/word-length-stats"
 tasks.named('run') {
     standardInput = System.in
 }
