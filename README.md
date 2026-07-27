@@ -30,11 +30,13 @@ dataflow-example/
         ├── main/java/com/example/dataflow/WordCount.java
         ├── main/java/com/example/dataflow/WordLengthStats.java
         ├── main/java/com/example/dataflow/WordEnrichment.java
+        ├── main/java/com/example/dataflow/WindowedEventCounts.java
         ├── main/resources/input.txt        # sample input text
         ├── main/resources/stopwords.txt     # stopwords used by WordEnrichment
         ├── test/java/com/example/dataflow/WordCountTest.java
         ├── test/java/com/example/dataflow/WordLengthStatsTest.java
-        └── test/java/com/example/dataflow/WordEnrichmentTest.java
+        ├── test/java/com/example/dataflow/WordEnrichmentTest.java
+        └── test/java/com/example/dataflow/WindowedEventCountsTest.java
 ```
 
 ## Examples
@@ -84,6 +86,25 @@ gradle :app:run -PmainClass=com.example.dataflow.WordEnrichment --args="--output
 
 Produces three sets of sharded files: `enrichment-filtered-*`, `enrichment-short-*`, `enrichment-long-*`.
 
+### 4. WindowedEventCounts (windowing & triggers)
+
+Introduces **event-time windowing** and **triggers**, simulating a stream with Beam's
+`TestStream` (no Kafka/PubSub needed to learn the concepts locally). A trigger controls *when*
+a window emits results — this example fires once ON_TIME when the watermark passes the window,
+then fires again with a LATE pane once a late-arriving element shows up for that same,
+already-closed window.
+
+```bash
+gradle :app:run -PmainClass=com.example.dataflow.WindowedEventCounts
+```
+
+Expected console output:
+```
+window=[1970-01-01T00:00:00.000Z..1970-01-01T00:00:10.000Z) key=page-a count=2 pane=ON_TIME (isLast=false)
+window=[1970-01-01T00:00:10.000Z..1970-01-01T00:00:20.000Z) key=page-b count=1 pane=ON_TIME (isLast=false)
+window=[1970-01-01T00:00:00.000Z..1970-01-01T00:00:10.000Z) key=page-a count=3 pane=LATE (isLast=false)
+```
+
 ## Key Beam concepts introduced
 
 | Concept | What it is |
@@ -97,10 +118,12 @@ Produces three sets of sharded files: `enrichment-filtered-*`, `enrichment-short
 | `Combine.perKey` / `CombineFn` | A distributed reduction: partial aggregation on each worker, then merged — the basis for custom aggregations like averages |
 | Side input (`View.asList/asMap`) | A small, auxiliary PCollection made available to every worker processing a main PCollection — e.g. for filtering/enrichment without a join |
 | Side outputs (`TupleTag`, `withOutputTags`) | Routing a single `ParDo`'s results into multiple independent output PCollections in one pass |
+| `Window` / `FixedWindows` | Buckets elements into fixed-size event-time intervals |
+| `Trigger` / `Watermark` / `TestStream` | Controls *when* a window emits results, including handling of late-arriving data |
 
 ## Ideas for future iterations
 
-- Windowing & triggers with an unbounded/streaming source
 - Reading/writing structured data (Avro, JSON, BigQuery-style schemas)
 - Running the same pipeline on other runners (e.g. Flink) or actual Google Cloud Dataflow
 - Beam SQL / Schema-aware PCollections
+- Wiring a real streaming source (Kafka, Google Cloud Pub/Sub) instead of `TestStream`
